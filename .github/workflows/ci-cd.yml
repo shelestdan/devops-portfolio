@@ -56,3 +56,7 @@ jobs:
             git pull origin main
             docker-compose pull
             docker-compose up -d
+
+      - name: Verify deployment
+        run: |
+          curl -s http://${{ secrets.SERVER_IP }} | grep "DevOps проект" || (echo "Deployment failed" && exit 1)
