@@ -43,27 +43,3 @@ jobs:
         run: |
           sleep 10
           curl -s http://localhost:80 | grep "DevOps проект" || (echo "Test failed" && exit 1)
-
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Deploy to server
-        uses: appleboy/ssh-action@master  # Используем последнюю версию
-        with:
-          host: ${{ secrets.SERVER_IP }}
-          username: ubuntu
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            cd /opt/devops-portfolio
-            git pull origin main
-            docker-compose pull
-            docker-compose up -d
-
-      - name: Verify deployment
-        run: |
-          curl -s http://${{ secrets.SERVER_IP }} | grep "DevOps проект" || (echo "Deployment failed" && exit 1)
