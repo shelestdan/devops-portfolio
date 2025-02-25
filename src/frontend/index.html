@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>DevOps Portfolio</title>
+</head>
+<body>
+    <h1>Мой DevOps проект!</h1>
+    <p>Backend ответ: <span id="backend-data">Загрузка...</span></p>
+    <script>
+        fetch('/api/data')
+            .then(response => response.text())
+            .then(data => document.getElementById('backend-data').textContent = data);
+    </script>
+</body>
+</html>

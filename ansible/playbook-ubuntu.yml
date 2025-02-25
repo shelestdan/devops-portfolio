@@ -1,0 +1,88 @@
+---
+- name: Deploy DevOps Portfolio
+  hosts: localhost
+  become: true
+  vars:
+    project_dir: /opt/devops-portfolio
+  tasks:
+    - name: Убедиться, что целевая директория существует
+      ansible.builtin.file:
+        path: "{{ project_dir }}"
+        state: directory
+        mode: '0755'
+        recurse: yes
+
+    - name: Установить Docker и необходимые пакеты
+      ansible.builtin.apt:
+        name:
+          - docker.io
+          - python3-pip
+        state: present
+        update_cache: yes
+
+    - name: Установить Python модуль для Docker
+      ansible.builtin.pip:
+        name: docker
+        state: present
+        executable: pip3
+        extra_args: --break-system-packages
+
+    - name: Установить Docker Compose как плагин
+      ansible.builtin.get_url:
+        url: https://github.com/docker/compose/releases/download/v2.23.0/docker-compose-linux-x86_64
+        dest: /usr/lib/docker/cli-plugins/docker-compose
+        mode: '0755'
+
+    - name: Создать директорию для мониторинга
+      ansible.builtin.file:
+        path: "{{ project_dir }}/monitoring"
+        state: directory
+        mode: '0755'
+
+    - name: Копируем docker-compose.yml
+      ansible.builtin.copy:
+        src: ../docker-compose.yml
+        dest: "{{ project_dir }}/docker-compose.yml"
+
+    - name: Копируем prometheus.yml
+      ansible.builtin.copy:
+        src: ../monitoring/prometheus.yml
+        dest: "{{ project_dir }}/monitoring/prometheus.yml"
+
+    - name: Копируем nginx.conf
+      ansible.builtin.copy:
+        src: ../nginx.conf
+        dest: "{{ project_dir }}/nginx.conf"
+
+    - name: Копируем исходные файлы frontend
+      ansible.builtin.copy:
+        src: ../src/frontend/
+        dest: "{{ project_dir }}/src/frontend/"
+        remote_src: no
+
+    - name: Копируем исходные файлы backend
+      ansible.builtin.copy:
+        src: ../src/backend/
+        dest: "{{ project_dir }}/src/backend/"
+        remote_src: no
+
+    - name: Убедиться, что docker-compose.yml существует
+      ansible.builtin.stat:
+        path: "{{ project_dir }}/docker-compose.yml"
+      register: docker_compose_file
+
+    - name: Отладка Проверка существования docker-compose.yml
+      debug:
+        msg: "Файл docker-compose.yml найден: {{ docker_compose_file.stat.exists }}"
+
+    - name: Запустить Docker Compose
+      community.docker.docker_compose_v2:
+        project_name: devops-portfolio
+        project_src: "{{ project_dir }}"
+        files:
+          - "docker-compose.yml"
+        state: present
+        pull: "always"
+        build: "always"
+        remove_orphans: yes
+        timeout: 120
